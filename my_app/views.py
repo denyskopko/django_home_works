@@ -1,9 +1,11 @@
 from rest_framework.decorators import api_view
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework.request import Request
 from rest_framework import status
-from .models import Task
-from .serialisers import TaskSerializer
+from rest_framework.views import APIView
+from .models import Task, SubTask
+from .serialisers import TaskSerializer, SubTaskSerializer
 from django.db.models import Count
 from django.utils import timezone
 
@@ -47,3 +49,68 @@ def task_stats(request):
         "status_breakdown": by_status,
         "overdue_tasks": overdue_count
     })
+
+"""Задание 5: Создание классов представлений
+Создайте классы представлений для работы с подзадачами (SubTasks), включая создание, получение, обновление
+ и удаление подзадач. Используйте классы представлений (APIView) для реализации этого функционала.
+Шаги для выполнения:
+Создайте классы представлений для создания и получения списка подзадач (SubTaskListCreateView).
+Создайте классы представлений для получения, обновления и удаления подзадач (SubTaskDetailUpdateDeleteView).
+Добавьте маршруты в файле urls.py, чтобы использовать эти классы."""
+
+
+class SubTaskListCreateView(APIView):
+    def get (self, request:Request)->Response:
+        subtask_list = SubTask.objects.all()
+        serializer = SubTaskSerializer(subtask_list, many=True)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+
+    def post(self, request:Request)->Response:
+        try:
+            serializer = SubTaskSerializer(data=request.data, many=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+        except ValidationError as e:
+            return Response(data={"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubTaskDetailUpdateDeleteView(APIView):
+    def get(self, request:Request, pk)->Response:
+        try:
+            obj = SubTask.objects.get(pk=pk)
+            serializer = SubTaskSerializer(obj)
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        except SubTask.DoesNotExist as e:
+            return Response(status=status.HTTP_404_NOT_FOUND, data={"error": str(e)})
+
+    def put(self, request:Request, pk)->Response:
+        try:
+            obj = SubTask.objects.get(pk=pk)
+            serializer = SubTaskSerializer(obj, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        except SubTask.DoesNotExist as e:
+            return Response(status=status.HTTP_404_NOT_FOUND, data={"error": str(e)})
+
+
+    def delete(self, request:Request, pk)->Response:
+        try:
+            obj = SubTask.objects.get(pk=pk)
+            obj.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except SubTask.DoesNotExist as e:
+            return Response(status=status.HTTP_404_NOT_FOUND, data={"error": str(e)})
+
+
+
+
+
+
+
+
+
+
+
