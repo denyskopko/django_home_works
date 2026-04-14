@@ -1,10 +1,9 @@
 import os
-from asyncio import all_tasks
-
 import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
+
 
 from my_app.models import Task, Category, SubTask
 from django.utils import timezone
