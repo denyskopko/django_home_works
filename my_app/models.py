@@ -2,6 +2,8 @@ from django.core.validators import MinLengthValidator, MaxLengthValidator
 from django.db import models
 from datetime import datetime
 
+from django.utils import timezone
+
 STATUS_CHOICES = [
         ('New', 'New'),
         ('In progress', 'In progress'),
@@ -41,6 +43,11 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+    def delete(self, *args, **kwargs):
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.save()
 #--------------------------------------------------------------------------------------------------------------------
 
 class SubTask(models.Model):

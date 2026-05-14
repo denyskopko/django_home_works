@@ -16,7 +16,6 @@ class SubTaskSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-
 #----------------------------------------------------------------------------------------------------------------
 class TaskDetailSerializer(serializers.ModelSerializer):
     subtasks = SubTaskSerializer(many=True, read_only=True)
@@ -59,12 +58,6 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
             except Category.DoesNotExist:
                 return super().update(instance, validated_data)
 #----------------------------------------------------------------------------------------------------------------
-"""Задание 4: Валидация данных в сериализаторах
-Создайте TaskCreateSerializer и добавьте валидацию для поля deadline, чтобы дата не могла быть в прошлом. 
-Если дата в прошлом, возвращайте ошибку валидации.
-Шаги для выполнения:
-Определите TaskCreateSerializer в файле serializers.py.
-Переопределите метод validate_deadline для проверки даты."""
 class TaskCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
@@ -76,7 +69,6 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         return value
 
 
-
     def create(self, validated_data):
          data_deadline= validated_data.get("deadline")
          if data_deadline < timezone.now():
@@ -84,4 +76,8 @@ class TaskCreateSerializer(serializers.ModelSerializer):
          return super().create(validated_data)
 
 
-
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'is_deleted', 'deleted_at']
+        read_only_fields = ['is_deleted', 'deleted_at']
