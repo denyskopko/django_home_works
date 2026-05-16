@@ -6,7 +6,8 @@ from .models import Task, SubTask, Category
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ["title", "description", "status", "deadline"]
+        fields = ["id", "title", "description", "status", "deadline", "owner"]
+        read_only_fields = ["owner"]
 
 
 #----------------------------------------------------------------------------------------------------------------
@@ -14,6 +15,7 @@ class SubTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubTask
         fields = "__all__"
+        read_only_fields = ["owner"]
 
 
 #----------------------------------------------------------------------------------------------------------------
@@ -22,13 +24,16 @@ class TaskDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = "__all__"
+        read_only_fields = ["owner"]
 
 
 #----------------------------------------------------------------------------------------------------------------
 class CreateSubTaskSerializer(serializers.ModelSerializer):
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
     class Meta:
         model = SubTask
-        fields = ["title", "description", "task", "status", "deadline"]
+        fields = ["title", "description", "task", "status", "deadline", "owner"]
         read_only_fields = ["created_at"]
 
 
@@ -42,8 +47,7 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         name = validated_data.get("name")
         if name is not None:
-            category = Category.objects.get(name=name)
-            if category:
+            if Category.objects.filter(name=name).exists():
                 raise serializers.ValidationError("такая категория уже имеется")
             return super().create(validated_data)
 
@@ -59,6 +63,8 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
                 return super().update(instance, validated_data)
 #----------------------------------------------------------------------------------------------------------------
 class TaskCreateSerializer(serializers.ModelSerializer):
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
+
     class Meta:
         model = Task
         fields = "__all__"

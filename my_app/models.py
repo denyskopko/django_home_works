@@ -1,8 +1,8 @@
 from django.core.validators import MinLengthValidator, MaxLengthValidator
 from django.db import models
 from datetime import datetime
-
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 STATUS_CHOICES = [
         ('New', 'New'),
@@ -18,6 +18,7 @@ class Task(models.Model):
     status :str  = models.CharField(max_length=15, choices=STATUS_CHOICES, default='New', verbose_name="task status")
     deadline : datetime = models.DateTimeField(help_text="Конечная дата выполнения", verbose_name="task deadline")
     created_at : datetime = models.DateTimeField(auto_now_add=True, verbose_name="task created at")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks', verbose_name="task owner")
 
     class Meta:
         db_table = "task_manager_task"
@@ -57,6 +58,7 @@ class SubTask(models.Model):
     status : str = models.CharField(max_length=15, choices=STATUS_CHOICES, default='New', verbose_name="subtask status")
     deadline : datetime = models.DateTimeField(help_text="", verbose_name="subtask deadline")
     created_at : datetime = models.DateTimeField(auto_now_add=True, verbose_name="subtask created at")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='subtasks', verbose_name="subtask owner")
 
     class Meta:
         db_table = "task_manager_subtask"
