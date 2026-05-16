@@ -1,8 +1,7 @@
 import os
-
-
 from pathlib import Path
 from environ import Env
+from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -170,8 +169,20 @@ AUTH_PASSWORD_VALIDATORS = [
 REST_FRAMEWORK = {
 'DEFAULT_PAGINATION_CLASS':
 'rest_framework.pagination.PageNumberPagination',
-'PAGE_SIZE': 6,
+'PAGE_SIZE': 5,
+
+'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+
+
 }
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/

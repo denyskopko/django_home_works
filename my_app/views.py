@@ -1,4 +1,4 @@
-from rest_framework.decorators import api_view, action
+from rest_framework.decorators import api_view, action, permission_classes
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, GenericAPIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets
@@ -10,12 +10,16 @@ from django.utils import timezone
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+from rest_framework.permissions import IsAuthenticated
+
 #Tasks
 
 
 class TaskListCreateView(ListCreateAPIView):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
+
 
     filter_backends = [
         DjangoFilterBackend,
@@ -35,18 +39,15 @@ class TaskDetailView(RetrieveUpdateDestroyAPIView):
 
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
 
-
-class SubTaskPagination(PageNumberPagination):
-    page_size = 5
-    page_size_query_param = 'page_size'
 
 
 class SubTaskListCreateView(ListCreateAPIView):
 
     queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
-    pagination_class = SubTaskPagination
+    permission_classes = [IsAuthenticated]
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
@@ -61,9 +62,13 @@ class SubTaskListCreateView(ListCreateAPIView):
 class SubTaskDetailView(RetrieveUpdateDestroyAPIView):
     queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
+    permission_classes = [IsAuthenticated]
 
 class TaskByDay(APIView):
-   def get(self, request):
+    permission_classes = [IsAuthenticated]
+
+
+    def get(self, request):
        day = self._get_day_param(request)
        if day is not None:
            tasks = Task.objects.filter(day=day)
@@ -71,9 +76,8 @@ class TaskByDay(APIView):
            tasks = Task.objects.all()
        serializer = TaskSerializer(tasks, many=True)
        return Response(serializer.data, status=status.HTTP_200_OK)
-#
-#
-   def _get_day_param(self, request):
+
+    def _get_day_param(self, request):
        day_param = request.query_params.get('day')
        if not day_param:
            return None
@@ -89,6 +93,7 @@ class TaskByDay(APIView):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def task_stats(request):
     total_count = Task.objects.count()
     status_data = Task.objects.values('status').annotate(total=Count('status'))
@@ -105,6 +110,7 @@ def task_stats(request):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    permission_classes=[IsAuthenticated]
 
     @action(detail=False, methods=['get'], url_path='count-tasks')
     def count_tasks(self, request):
