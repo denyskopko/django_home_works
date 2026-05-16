@@ -4,15 +4,20 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from rest_framework.views import APIView
-from .models import Task, SubTask, Category
-from .serializers import TaskSerializer, SubTaskSerializer, CategorySerializer
+from my_app.models import Task, SubTask, Category
+from my_app.permissions import IsOwner
 from django.db.models import Count
 from django.utils import timezone
-from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from rest_framework.permissions import IsAuthenticated
-from permissions import IsOwner
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework.permissions import AllowAny
+from my_app.serializers import RegisterSerializer, TaskSerializer, SubTaskSerializer, CategorySerializer
 
 
 # Tasks
@@ -146,3 +151,93 @@ class CategoryViewSet(viewsets.ModelViewSet):
         ]
         return Response(data)
 
+
+AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
+ACCESS_COOKIE_MAX_AGE = 60 * 15
+
+
+def set_auth_cookies(response, refresh_token, access_token):
+    response.set_cookie(
+        key='refresh_token',
+        value=str(refresh_token),
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite='Lax',
+        max_age=AUTH_COOKIE_MAX_AGE
+    )
+    response.set_cookie(
+        key='access_token',
+        value=str(access_token),
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite='Lax',
+        max_age=ACCESS_COOKIE_MAX_AGE
+    )
+
+
+class RegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Пользователь успешно зарегистрирован"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get("username")
+        password = request.data.get("password")
+
+        user = authenticate(username=username, password=password)
+
+        if user is not None:
+            refresh = RefreshToken.for_user(user)
+            response = Response({"message": "Вход выполнен успешно"}, status=status.HTTP_200_OK)
+            set_auth_cookies(response, refresh, refresh.access_token)
+            return response
+
+        return Response({"error": "Неверный логин или пароль"}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class TokenRefreshView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get('refresh_token')
+        if not refresh_token:
+            return Response({"error": "Refresh token отсутствует"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        try:
+            old_refresh = RefreshToken(refresh_token)
+            new_refresh = RefreshToken.for_user(old_refresh.user)
+
+            old_refresh.blacklist()
+
+            response = Response({"message": "Токены успешно обновлены"}, status=status.HTTP_200_OK)
+            set_auth_cookies(response, new_refresh, new_refresh.access_token)
+            return response
+        except (TokenError, User.DoesNotExist):
+            return Response({"error": "Невалидный или просроченный токен"}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get('refresh_token')
+        response = Response({"message": "Выход выполнен успешно"}, status=status.HTTP_200_OK)
+
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except TokenError:
+                pass
+        response.delete_cookie('refresh_token')
+        response.delete_cookie('access_token')
+        return response

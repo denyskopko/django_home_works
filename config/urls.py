@@ -1,11 +1,10 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from my_app.views import (TaskListCreateView,TaskDetailView,SubTaskListCreateView,SubTaskDetailView,
-                          TaskByDay,task_stats, CategoryViewSet)
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
+from my_app.views import (
+    TaskListCreateView, TaskDetailView, SubTaskListCreateView, SubTaskDetailView,
+    TaskByDay, task_stats, CategoryViewSet,
+    RegisterView, LoginView, TokenRefreshView, LogoutView
 )
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
@@ -38,11 +37,13 @@ urlpatterns = [
 
     path('', include(router.urls)),
 
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/auth/register/', RegisterView.as_view(), name='auth_register'),
+    path('api/auth/login/', LoginView.as_view(), name='auth_login'),
+    path('api/auth/refresh/', TokenRefreshView.as_view(), name='auth_token_refresh'),
+    path('api/auth/logout/', LogoutView.as_view(), name='auth_logout'),
 
-
-    path('swagger<format>\.json|\.yaml', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    path(r'swagger<format>\.json|\.yaml', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 ]
+
